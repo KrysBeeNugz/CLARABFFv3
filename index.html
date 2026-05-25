@@ -776,6 +776,8 @@ RULES FOR actions:
             document.getElementById('apiKeyModal').classList.add('hidden');
             document.getElementById('apiKeyModal').classList.remove('flex');
             if (window._apiKeyResolve) { window._apiKeyResolve(key); window._apiKeyResolve = null; }
+            // If no profile yet, kick off onboarding now
+            if (!loadProfile()) setTimeout(startOnboarding, 300);
         };
         // ── END GEMINI API KEY ───────────────────────────────────────
         const LS_KEYS = {
@@ -1339,7 +1341,7 @@ RULES FOR actions:
 
         // --- STREAMING_CHUNK: Connecting Clara's Unfiltered AI chat... ---
         async function callGemini(contents, systemInstruction = null) {
-            const apiKey = await ensureApiKey();
+            const apiKey = getApiKey();
             if (!apiKey) throw new Error("No API key");
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
             const payload = { contents };
@@ -1358,6 +1360,10 @@ RULES FOR actions:
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (!text) return;
+
+            // Check for API key BEFORE entering try/catch — modal must not be swallowed
+            const apiKey = await ensureApiKey();
+            if (!apiKey) return;
 
             input.value = '';
             input.style.height = 'auto';
@@ -2525,7 +2531,10 @@ RULES FOR actions:
             const hasProfile = loadProfile();
             initializeApp();
             setupDropZones();
-            if (!hasProfile) {
+            if (!getApiKey()) {
+                document.getElementById('apiKeyModal').classList.remove('hidden');
+                document.getElementById('apiKeyModal').classList.add('flex');
+            } else if (!hasProfile) {
                 setTimeout(startOnboarding, 600);
             } else {
                 applyProfileToUI(state.profile);
