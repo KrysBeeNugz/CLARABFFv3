@@ -1343,7 +1343,7 @@ RULES FOR actions:
         async function callGemini(contents, systemInstruction = null, retries = 2) {
             const apiKey = getApiKey();
             if (!apiKey) throw new Error("No API key");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const payload = { contents };
             if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
 
