@@ -714,14 +714,31 @@ RULES: Be sarcastic, blunt, loyal. NO toxic positivity. Extract only real, speci
             box.scrollTop = box.scrollHeight;
         }
 
+        let lastMessageTime = 0;
+        const MESSAGE_COOLDOWN_MS = 4000; // 4 seconds between messages
+
         async function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (!text) return;
 
+            // Enforce cooldown to avoid rate limiting
+            const now = Date.now();
+            const elapsed = now - lastMessageTime;
+            if (elapsed < MESSAGE_COOLDOWN_MS) {
+                const wait = Math.ceil((MESSAGE_COOLDOWN_MS - elapsed) / 1000);
+                showToast(`Give me ${wait}s — processing last message...`);
+                return;
+            }
+
             input.value = '';
             const apiKey = await ensureApiKey();
             if (!apiKey) return;
+
+            // Disable send button during request
+            const sendBtn = document.getElementById('chatSendBtn');
+            if (sendBtn) { sendBtn.disabled = true; sendBtn.classList.add('opacity-50'); }
+            lastMessageTime = Date.now();
 
             // Add user message
             state.chatHistory.push({ role: "user", parts: [{ text }] });
@@ -805,11 +822,13 @@ RULES: Be sarcastic, blunt, loyal. NO toxic positivity. Extract only real, speci
                 const errMsg = err.message?.startsWith('429')
                     ? "Rate limit — give me 10 seconds and try again."
                     : err.message?.match(/401|403/)
-                        ? "API key issue — tap API Key in the header and re-enter it."
+                        ? "API key issue — check the key in the code."
                         : "Something went sideways: " + err.message;
                 state.chatHistory.push({ role: "model", parts: [{ text: errMsg }] });
                 renderSyncedChat();
                 persistAll();
+            } finally {
+                if (sendBtn) { sendBtn.disabled = false; sendBtn.classList.remove('opacity-50'); }
             }
         }
 
